@@ -1,39 +1,46 @@
 require 'logger'
 require 'net/http'
+require 'yaml'
 
-#log = Logger.new(STDOUT)
-log = Logger.new('/tmp/dynipo.log', 'weekly')
-log.level = Logger::DEBUG
+config_file = File.join(__dir__, 'config.yml')
 
-if ARGV.empty?
-	#host = 'localhost:3000'
-	host = 'dynipo.herokuapp.com'
-	server_name = ''
-	password = ''
-
-elsif ARGV.count == 3
-	host = ARGV[0]
-	server_name = ARGV[1]
-	password = ARGV[2]
-
+if File.exists?(config_file)
+	config = YAML::load_file(config_file)
 else
-	puts "Usage:
-  dynipo.rb host server_name password
-
-Examples:
-    dynipo.rb dynipo.com minecraft Password123
-    dynipo.rb 127.0.0.1:3000 fileserver Password123"
-	exit
+	config = Hash.new
 end
 
-log.debug "Reporting #{server_name} to #{host}..."
+defaults = {
+	:hostname => 'localhost',
+	:server_name => 'myserver',
+	:admin_password => 'password',
+}.each do |param, default|
 
-uri = URI("http://#{host}/update")
+	if !config.include?(param)
+		puts "Input #{param} (default '#{default}'):"
+		val = gets.chomp
+		config[param] = val.empty? ? default : val
+		puts "  #{param} = '#{config[param]}'"
+	end
+
+end
+
+#puts config.inspect
+File.write(config_file, YAML.dump(config) )
+
+#log = Logger.new(STDOUT)
+log = Logger.new(File.join(__dir__, 'log/dynipo.log'), 'weekly')
+log.level = Logger::DEBUG
+
+uri = URI("http://#{config[:hostname]}/update")
 params = {
-		:name => server_name,
-		:password => password
+		:name => config[:server_name],
+		:password => config[:admin_password],
 	}
 uri.query = URI.encode_www_form(params)
+
+log.debug "URL: #{uri}"
+
 res = Net::HTTP.get_response(uri)
 
 log.info 'Code: ' + res.code
