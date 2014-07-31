@@ -28,7 +28,7 @@ if OS.linux?
 		return
 	end
 	# Install
-	`crontab -l | { cat; echo "\n#Dynipo updates every 10 minutes\n*/10 * * * * ruby #{File.join(__dir__, 'dynipo.rb')}"; } | crontab -`
+	`crontab -l | { cat; echo "\n#Dynipo updates every minute\n* * * * * #{ruby_exe} #{File.join(__dir__, 'dynipo.rb')}"; } | crontab -`
 elsif OS.windows?
 	puts 'Windows support coming soon...'
 else
